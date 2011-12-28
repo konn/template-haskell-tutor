@@ -2,7 +2,6 @@
 この記事は [http://partake.in/events/eaea52c2-61ef-46d5-a855-3a2dde459e3a:title=Haskell Advent Calendar 2011] 18日目の参加記事です。
 
 Template Haskell の初心者にむけて、その原理と方法論を、THを書くときの思考法にそって丁寧に解説するこころみです。なので幾分冗長なところがありますので、知ってると思ったら飛ばしてしまって大丈夫です。
-節の最後に簡単な要約があるので、そこだけ読む、と云う読み方も出来ると思います。
 
 ** Template Haskell とは？── TH で出来ること
 Template Haskell とは、Haskell で((正確には Haskell 処理系の一種である GHC で))コンパイル時メタプログラミングを行うための仕組みです。
