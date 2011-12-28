@@ -767,6 +767,21 @@ appsT [Either, Int, String] == Either Int String
 
 式の構文木に関しては、Language.Haskell.TH で [http://hackage.haskell.org/packages/archive/template-haskell/latest/doc/html/Language-Haskell-TH.html#v:appsE:title=appsE] と云う同様のことをやってくれる便利函数が居るんですが、型に対しては用意されてなかったのでその定義をちょここっとかえて自前で定義してみました。
 
+ここで気付いたと思いますが、パタンでの適用と式・型でのそれの構文木は構造が違います。パタンではデータ構築子に引数全てが完全適用されていなくてはいけないので 
+
+>|haskell|
+ConP :: Name -> [Pat] -> Pat
+||<
+
+と、構築子の構文木に引数が含まれている形でしたが、式と型に関してはデータ構築子の他にも函数に対する適用があったり、部分適用があったりするので、
+
+>|haskell|
+ConE :: Name -> Exp
+VarE :: Name -> Exp
+AppE :: Exp -> Exp -> Exp
+||<
+のように構築子、函数、適用がそれぞれ別れた形になっています。型についても同様です。
+
 ** Template Haskell の落とし穴
 *** Stage Restriction とのたたかい
 それは、<strong>トップレベル接合中で呼び出せる函数は外部から import したものだけ</strong>ということです。何故こんな制限があるのかと云うと、コンパイル時に接合に循環が起きないかをチェックするのが技術的に非常にコストがかかるため、このような形になっています。では、ローカルの変数などを渡したい場合はどうすればいいの……？と云うのが当然次に出て来る疑問ですが、その場合は変数の名前を渡してやるように変更すれば、大抵の場合うまくいきます。
