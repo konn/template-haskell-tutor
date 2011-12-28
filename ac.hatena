@@ -690,7 +690,8 @@ data WeightTree a = Nil | Leaf Int a | Branch (WeightTree a) (WeightTree a)
 
 こんな感じになりそうです。要は構築子の左から順に、O、IO、IIO、IIIO……と区別のつくようにタグを割り振って、それに続けて引数を順番にエンコードして置いていけばよいわけです。そして、最後のタグについては O を付けると冗長なのでそれをとってしまえばいい、と。
 
-こんなことを繰り返して、encode の自動生成まで書いたのがリポジトリの[https://github.com/konn/template-haskell-tutor/blob/master/BinTH.hs:title=BinTH.hs]です。
+
+こんな原理に従って encode の自動生成まで書いたのがリポジトリの[https://github.com/konn/template-haskell-tutor/blob/master/BinTH.hs:title=BinTH.hs]です。
 そこから核になる部分を取り出してみましょう。
 
 >|haskell|
