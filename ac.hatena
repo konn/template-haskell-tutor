@@ -744,10 +744,10 @@ genFuns (p:ps) (e:es) =
 >|haskell|
 appT (conT ''Bin) (appsT $ conT name : map (varT . tvName) vars)
 ||<
-と云うのが少し読みづらいですが、これは型インスタンス宣言の部分で、例えば WeightTree に対しては
+と云うのが少し読みづらいですが、これは型インスタンス宣言の部分で、例えば Either に対しては
 
 >|haskell|
-Bin (WeightTree a)
+Bin (Either a b)
 ||<
 
 の部分にすぎません。呼ばれている appsT と云うのは、このモジュールで勝手に定義した次の便利函数です：
