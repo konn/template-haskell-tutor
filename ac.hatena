@@ -722,7 +722,20 @@ implForCon con = do
 ||<
 
 >|haskell|
+genFuns :: [PatQ] -> [ExpQ] -> [ClauseQ]
+genFuns []     []     = [ ]
+genFuns [p]    [e]    = [ clause [p] (normalB e) []]
+genFuns (p:ps) (e:es) =
+  clause [p] (normalB $ [| O : $(e) |]) [] : map modifyBody (genFuns ps es)
+  where
+    modifyBody :: ClauseQ -> ClauseQ
+    modifyBody cq = do
+      Clause pat (NormalB e) [] <- cq
+      clause (map return pat) (normalB [| I : $(return e) |]) []
+||<
 
+
+>|haskell|
 appsT :: [TypeQ] -> TypeQ
 appsT [] = error "appsT []"
 appsT [x] = x
