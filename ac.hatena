@@ -665,7 +665,9 @@ instance Ppr Clause -- Defined in Language.Haskell.TH.Ppr
 
 Haskell を書いていると、時々「あれっ、where 節って関数定義全体にわたるんだっけ……？」と思うときがありますが、この構文木を見れば一目瞭然に各パターンに対してだけであることがわかりますね。このように、THをやっていると Haskell の構文木でアイマイにしか理解していなかったところを理解できると云う副作用があります。わいわい。
 
-さて、必要な道具は大体そろった気がします。あとは今迄の要領で知らない構文木を調べていけばいいわけです。こんなことを繰り返して、encode の自動生成まで書いたのがリポジトリの[https://github.com/konn/template-haskell-tutor/blob/master/BinTH.hs:title=BinTH.hs]です。
+さて、必要な道具は大体そろった気がします。あとは今迄の要領で知らない構文木を調べていけばいいわけです。
+
+こんなことを繰り返して、encode の自動生成まで書いたのがリポジトリの[https://github.com/konn/template-haskell-tutor/blob/master/BinTH.hs:title=BinTH.hs]です。
 そこから核になる部分を取り出してみましょう。
 
 >|haskell|
@@ -677,7 +679,13 @@ deriveBin dName = do
       funs = genFuns pats exps
   return <$> instanceD cxts (appT (conT ''Bin) (appsT $ conT name : map (varT . tvName) vars))
                        [funD 'encode funs]
+||<
 
+deriveBin は Bin のインスタンスにしたい型の名前を取ってその定義を返す函数です。reify で型情報を取得して、自前で定義した normalizeInfo でデータ型の定義に変換しています。変換と云うと大袈裟に聴こえますが、基本的に data 定義と newtype 定義以外を弾いて、面倒なので結果は data 定義のものに統一するように処理をしているだけです(詳しくはソース参照)。
+
+次の行では、下で定義されている implForCon 函数にデータ構築子の情報を渡して、各構築子に対するエンコード函数の定義に必要な型制約、引数のパターン、定義本体(のもとになるもの)を取得しています。
+
+>|haskell|
 genFuns :: [PatQ] -> [ExpQ] -> [ClauseQ]
 genFuns []     []     = [ ]
 genFuns [p]    [e]    = [ clause [p] (normalB e) []]
