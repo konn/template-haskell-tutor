@@ -804,12 +804,15 @@ data Tree a = Leaf [a] | Branch (Tree a) (Tree a)
 ++ 方針1：面倒なので型引数を全部要求しちゃう
 ++ 方針2：reify でとれる [http://hackage.haskell.org/packages/archive/template-haskell/2.5.0.0/doc/html/Language-Haskell-TH-Syntax.html#t:ClassInstance:title=ClassInstance] の情報を利用して文脈を正確に指定するようがんばる
 + 必要なインスタンスが定義されていなかった場合自動的にそれも定義する機能を付ける。(難易度：難)
-++ 方針：reify の ClassInstance の情報や [http://hackage.haskell.org/packages/archive/template-haskell/2.5.0.0/doc/html/Language-Haskell-TH-Syntax.html#v:isClassInstance:title=isClassInstance]、[http://hackage.haskell.org/packages/archive/template-haskell/2.5.0.0/doc/html/Language-Haskell-TH-Syntax.html#v:classInstances=classInstances]函数などを使ってみる
+++ 方針：reify の ClassInstance の情報や [http://hackage.haskell.org/packages/archive/template-haskell/2.5.0.0/doc/html/Language-Haskell-TH-Syntax.html#v:isClassInstance:title=isClassInstance]、[http://hackage.haskell.org/packages/archive/template-haskell/2.5.0.0/doc/html/Language-Haskell-TH-Syntax.html#v:classInstances:title=classInstances]函数などを使ってみる
 +++ ただし、2.5.0.0 の classInstances 函数はとても使い辛い
 
 
 ** Template Haskell の落とし穴
+ここでは、
+
 *** Stage Restriction とのたたかい
+前に触れましたが、
 それは、<strong>トップレベル接合中で呼び出せる函数は外部から import したものだけ</strong>ということです。何故こんな制限があるのかと云うと、コンパイル時に接合に循環が起きないかをチェックするのが技術的に非常にコストがかかるため、このような形になっています。では、ローカルの変数などを渡したい場合はどうすればいいの……？と云うのが当然次に出て来る疑問ですが、その場合は変数の名前を渡してやるように変更すれば、大抵の場合うまくいきます。
 
 *** 接合部分のデバッグ
