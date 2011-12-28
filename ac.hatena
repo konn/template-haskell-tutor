@@ -666,6 +666,45 @@ instance Ppr Clause -- Defined in Language.Haskell.TH.Ppr
 Haskell を書いていると、時々「あれっ、where 節って関数定義全体にわたるんだっけ……？」と思うときがありますが、この構文木を見れば一目瞭然に各パターンに対してだけであることがわかりますね。このように、THをやっていると Haskell の構文木でアイマイにしか理解していなかったところを理解できると云う副作用があります。わいわい。
 
 さて、必要な道具は大体そろった気がします。あとは今迄の要領で知らない構文木を調べていけばいいわけです。こんなことを繰り返して、encode の自動生成まで書いたのがリポジトリの[https://github.com/konn/template-haskell-tutor/blob/master/BinTH.hs:title=BinTH.hs]です。
+そこから核になる部分を取り出してみましょう。
+
+>|haskell|
+deriveBin :: Name -> Q [Dec]
+deriveBin dName = do
+  DataD cxts name vars cons _ <- normalizeInfo <$> reify dName
+  (cs, pats, exps) <- unzip3 <$> mapM implForCon cons
+  let cxts = return $ map (ClassP ''Bin . pure) $ nub $ concat cs
+      funs = genFuns pats exps
+  return <$> instanceD cxts (appT (conT ''Bin) (appsT $ conT name : map (varT . tvName) vars))
+                       [funD 'encode funs]
+
+genFuns :: [PatQ] -> [ExpQ] -> [ClauseQ]
+genFuns []     []     = [ ]
+genFuns [p]    [e]    = [ clause [p] (normalB e) []]
+genFuns (p:ps) (e:es) =
+  clause [p] (normalB $ [| O : $(e) |]) [] : map modifyBody (genFuns ps es)
+  where
+    modifyBody :: ClauseQ -> ClauseQ
+    modifyBody cq = do
+      Clause pat (NormalB e) [] <- cq
+      clause (map return pat) (normalB [| I : $(return e) |]) []
+
+appsT :: [TypeQ] -> TypeQ
+appsT [] = error "appsT []"
+appsT [x] = x
+appsT (x:y:zs) = appsT ( (appT x y) : zs )
+      
+
+implForCon :: Con -> Q ([Type], PatQ, ExpQ)
+implForCon con = do
+  let (name, typs) = conTypesAndName con
+  vars <- replicateM (length typs) $ newName "x"
+  let pats = map varP vars
+      exps = map varE vars
+      expr = [| concat $(listE $ map (appE [| encode |]) exps) |]
+  return (filter isVarType typs, conP name pats, expr)
+
+||<
 
 ** Template Haskell の落とし穴
 *** Stage Restriction とのたたかい
