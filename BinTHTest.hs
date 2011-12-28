@@ -10,8 +10,3 @@ data Phantom a = Phantom Int
 
 deriveBin ''Tree
 deriveBin ''Unit
-
-do [e] <- deriveBin ''Phantom
-   runIO $ putStrLn $ pprint e
-   runIO . print =<< isClassInstance ''Bin [ConT ''Char]
-   return [e]

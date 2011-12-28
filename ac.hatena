@@ -64,7 +64,7 @@ data MyGreatData = MGD String Int
 
 ** Template Haskell ことはじめ
 ……はい。全然簡単じゃないですね。僕もそう思います。「こんなの一々書かなきゃいけないなら TH いいや……」と云う声も聴こえてきそうです。
-また更に、この構文木はええと GHC 7.0.3 標準添付の template-haskell-2.5.0.0 準拠の物です。これはどういうことかと云うと、将来のバージョンで構文木が変わるかもしれない、と云うことです。
+また更に、この構文木はええと GHC 7.0.4 標準添付の template-haskell-2.5.0.0 準拠の物です。これはどういうことかと云うと、将来のバージョンで構文木が変わるかもしれない、と云うことです。
 
 うひゃあ、そんなの追随出来る訳ないじゃんどうするの……と云う感じです。生構文木とか書ける気がしないし、構文木も変わっちゃうんじゃあ……。
 
@@ -455,12 +455,10 @@ sel' count nth | count >= nth = do
 
 ** インスタンスの自動生成 —— 型情報と定義の扱い
 さて。大体コツはつかめてきたでしょうか。タプルの例はちょっと簡単すぎた感があるので、いっきに進んだ例を扱ってみましょう。
-ソースコード全てを載せると大変なので、
+ソースコード全てを載せると大変なので、GitHub に載せた[https://github.com/konn/template-haskell-tutor:title=ソースコード]を参照してください。
 
-次のようなバイナリ・エンコードのための型クラス、Bin を考えます：
+次のようなバイナリ・エンコードのための型クラス、Bin を考えます(完全な実装はGitHubの Bin.hs をご覧ください)：
 
-
-Bin.hs
 >|haskell|
 data Bit = O | I deriving (Show, Read, Eq, Ord)
 
@@ -473,8 +471,203 @@ instance Int a where
   decode = ...
 ||<
 
+この Bin のインスタンスを一々生成していたのではとても面倒なので、何とかして自動生成したいなあ、と思いますよね？思ってください。
 
+さて、自動生成したいと思って貰えたと思います。その方法は総称プログラミングの手法をつかったり色々ありますが、ここでは Template Haskell を使おうと思います。TH でそんなことが出来るの？と思うかもしれませんが、TH には
+
+- 型や函数、インスタンスの情報を取得する
+
+と云う最強の技が残っていたのでした。この章の目的は、この機能を説明することです。
+型、函数、クラスの情報を取得するには <b>[http://hackage.haskell.org/packages/archive/template-haskell/2.5.0.0/doc/html/Language-Haskell-TH-Syntax.html#v:reify:title=reify]((りーえふぁい、と読むみたいです。具体化するとか云う意味らしい))函数</b>
+
+>|haskell|
+reify :: Name -> Q Info
+||<
+
+を使用します。名前に紐付けられている実体に関する情報 [http://hackage.haskell.org/packages/archive/template-haskell/2.5.0.0/doc/html/Language-Haskell-TH-Syntax.html#t:Info:title=Info] を返してくれます。リファレンスを読むとわかるように、2.5.0.0 時点では型クラス、型構築子、データ構築子、変数、型変数の情報を得ることが出来ます。
+なんだかわくわくしますね! 早速試してみましょう。
+
+>|zsh|
+$ ghci -XTemplateHaskell 
+GHCi, version 7.0.4: http://www.haskell.org/ghc/  :? for help
+> :m Language.Haskell.TH
+> runQ $ reify ''String
+Template Haskell error: Can't do `reify' in the IO monad
+*** Exception: user error (Template Haskell failure)
+||<
+
+おや、怒られてしまいましたね……。そう、実は <b>reify 函数はコンパイル時にしか実行出来ない</b>んです。
+これは、Template Haskell は裏で GHCi を使って色々な処理をしているかららしいです。らしい、と云うのは良くしらないと云うことです。
+
+なので、「この型の情報が欲しいなあ」「この函数の情報が欲しい」「クラス舐めたいぺろぺろ」みたいなことを考えたら、一旦プログラムを書いて、それを GHCi で読み込むなり実行するなりしてやる必要があります。そこで、 reifier.hs とか適当な名前のファイルを作って、そこで色々実験することにしましょう。
+
+>|haskell|
+{-# LANGUAGE TemplateHaskell #-}
+import Language.Haskell.TH
+import Bin
+
+do info <- reify ''String
+   runIO $ print info
+   return []
+||<
+
+これを GHCi で読み込むと……
+
+>|haskell|
+> :l reifier.hs
+[1 of 1] Compiling Main             ( /Users/hiromi/haskell/advent/2011/reifier.hs, interpreted )
+TyConI (TySynD GHC.Base.String [] (AppT ListT (ConT GHC.Types.Char)))
+Ok, modules loaded: Main.
+||<
+
+シレッと String の定義を盗み見ることに成功しました! 真ん中の TyConI のところです。
+
+ところで、上の reifier.hs ですが妙ですね……。何もないところにいきなり do式が書いてあります。malformed なんじゃないの？
+
+そんなことはありません。実はこれは、
+
+>|haskell|
+$(do info <- reify ''String
+     runIO $ print info
+     return [])
+||<
+
+の省略形なのです。そういえばだいぶ昔に「トップレベル宣言では $( ) を省略出来る」と云うようなことを云っていたと思います。宣言の接合なので do式全体の値は Q [Dec] を返す必要があります。なので、最後の行で return [] としてツジツマを合わせているのです。
+では、さっき定義した Bin 型クラスの情報を見てみたいですね。しかし、Bin の名前はどうやって指定すればいいのでしょう……？
+
+実は、TH では型名と型クラス名は同じ名前空間・構文木で表現されるという約束があります。なので今のプログラムの
+
+>|haskell|
+do info <- reify ''String
+||<
+
+を 
+
+>|haskell|
+do info <- reify ''Bin
+||<
+
+に書き換えれば……
+
+>|haskell|
+> :l reifier.hs
+[1 of 2] Compiling Bin              ( Bin.hs, interpreted )
+[2 of 2] Compiling Main             ( /Users/hiromi/haskell/advent/2011/reifier.hs, interpreted )
+ClassI (ClassD [] Bin.Bin [PlainTV a_1627406217] [] [SigD Bin.encode (ForallT [PlainTV a_1627406217] [ClassP Bin.Bin [VarT a_1627406217]] (AppT (AppT ArrowT (VarT a_1627406217)) (AppT ListT (ConT Bin.Bit)))),SigD Bin.decode (ForallT [PlainTV a_1627406217] [ClassP Bin.Bin [VarT a_1627406217]] (AppT (AppT ArrowT (AppT ListT (ConT Bin.Bit))) (AppT (AppT (TupleT 2) (VarT a_1627406217)) (AppT ListT (ConT Bin.Bit)))))]) [ClassInstance {ci_dfun = Bin.$fBinInt, ci_tvs = [], ci_cxt = [], ci_cls = Bin.Bin, ci_tys = [ConT GHC.Types.Int]},ClassInstance {ci_dfun = Bin.$fBinBool, ci_tvs = [], ci_cxt = [], ci_cls = Bin.Bin, ci_tys = [ConT GHC.Bool.Bool]},ClassInstance {ci_dfun = Bin.$fBin[], ci_tvs = [PlainTV a_1627406230], ci_cxt = [ClassP Bin.Bin [VarT a_1627406230]], ci_cls = Bin.Bin, ci_tys = [AppT ListT (VarT a_1627406230)]},ClassInstance {ci_dfun = Bin.$fBinBit, ci_tvs = [], ci_cxt = [], ci_cls = Bin.Bin, ci_tys = [ConT Bin.Bit]}]
+Ok, modules loaded: Bin, Main.
+||<
+
+うひゃあ、長々とデータご出て来ましたね! メンバ函数の型や制約、クラスのインスタンスなどの情報が取れているのがわかると思います。
+
+ところでリファレンスを見ると、Info 型には
+
+>|haskell|
+VarI Name Type (Maybe Dec) Fixity
+||<
+
+という構築子がありますね。これはきっと函数・変数の定義をとってくる子にちがいありません。Maybe Dec ということはひょっとすると定義も取ってこれるのかな……! と思いつつ先程の部分を、
+
+>|haskell|
+do info <- reify 'curry
+||<
+
+にしてみると……
+
+>|haskell|
+> :reload
+[1 of 2] Compiling Bin              ( Bin.hs, interpreted )
+[2 of 2] Compiling Main             ( /Users/hiromi/haskell/advent/2011/reifier.hs, interpreted )
+VarI Data.Tuple.curry (ForallT [PlainTV a_1627409906,PlainTV b_1627409907,PlainTV c_1627409908] [] (AppT (AppT ArrowT (AppT (AppT ArrowT (AppT (AppT (TupleT 2) (VarT a_1627409906)) (VarT b_1627409907))) (VarT c_1627409908))) (AppT (AppT ArrowT (VarT a_1627409906)) (AppT (AppT ArrowT (VarT b_1627409907)) (VarT c_1627409908))))) Nothing (Fixity 9 InfixL)
+Ok, modules loaded: Bin, Main.
+||<
+おお、型の情報とか色々とれた! と思いますが肝心の函数定義のところが Nothing ですね……。
+
+ここで残念なお知らせです。Info には定義を入れる部分があるにもかかわらず、現在<b>函数定義をとってくる機能は実装されていません</b>。まあ余り使わないと云えばそれまでですが、悲しいものがありますね……。
+
+
+閑話休題。いよいよインスタンスの自動生成にはいりましょー。まずは常套手段、適当な宣言を書いて構文木の探りを入れてみましょう。
+
+>|zsh|
+> :{
+ runQ [d|
+   instance (Bin a) => Bin (Maybe a) where
+     encode Nothing = [O]
+     encode (Just a) = I : encode a
+     decode (I:xs) = let (a, xs') = decode xs in (Just a, xs')
+     decode (O:xs) = (Nothing, xs)
+   |]
+:}
+[ InstanceD
+    [ClassP Bin.Bin [VarT a_0]]
+    (AppT (ConT Bin.Bin) (AppT (ConT Data.Maybe.Maybe) (VarT a_0)))
+    [ FunD encode [ Clause [ConP Data.Maybe.Nothing []] (NormalB (ListE [ConE Bin.O])) []
+                  , Clause [ConP Data.Maybe.Just [VarP a_1]]
+                           (NormalB
+                             (InfixE (Just (ConE Bin.I)) (ConE GHC.Types.:) (Just (AppE (VarE encode) (VarE a_1))))) []]
+    , FunD decode [ Clause [InfixP (ConP Bin.I []) GHC.Types.: (VarP xs_2)]
+                           (NormalB (LetE [ValD (TupP [VarP a_3,VarP xs'_4]) (NormalB (AppE (VarE decode) (VarE xs_2))) []] (TupE [AppE (ConE Data.Maybe.Just) (VarE a_3),VarE xs'_4]))) []
+                  , Clause [InfixP (ConP Bin.O []) GHC.Types.: (VarP xs_5)]
+                                   (NormalB (TupE [ConE Data.Maybe.Nothing,VarE xs_5])) []]
+   ]
+]
+||<
+
+インスタンス宣言には InstanceD を使えばよいようですね。構文木の引数の順番は大体実際のプログラムで書く順番に対応しているので、それぞれ順にインスタンス制約、インスタンス宣言本体、メンバ函数などの定義であろうと類推をつけることが出来ます。実際型を見てみると、
+
+>|haskell|
+> :t InstanceD
+InstanceD :: Cxt -> Type -> [Dec] -> Dec
+||<
+
+どうやら読み通りだったようです。[http://hackage.haskell.org/packages/archive/template-haskell/latest/doc/html/Language-Haskell-TH-Syntax.html#t:Cxt:title=Cxt] の説明を見ると Pred と云うのが出て来て、クラス制約を表わす ClassP と型同値を表わす EqualP の二つがあることがわかります。上で吐かれた構文木だと Bin a と云う制約が掛かっている様によめます。
+
+次に函数定義の方を読んでいきましょう。encode の定義とおぼしき部分だけ切り出すと、
+
+>|haskell|
+FunD encode [ Clause [ConP Data.Maybe.Nothing []]
+                     (NormalB (ListE [ConE Bin.O]))
+                     []
+            , Clause [ConP Data.Maybe.Just [VarP a_1]]
+                     (NormalB
+                       (InfixE (Just (ConE Bin.I)) 
+                               (ConE GHC.Types.:) 
+                               (Just (AppE (VarE encode) (VarE a_1)))))
+                     []
+            ]
+||<
+
+こうなっているので、 FunD の型を見てみます。
+
+>|haskell|
+FunD :: Name -> [Clause] -> Dec
+||<
+
+これは、関数名と定義節(Clause)のリストを取って函数定義の構文木を返すと云うことでしょう。定義節とは、例えば上の例であれば、
+
+>|haskell|
+encode Nothing = [O]
+encode (Just a) = I : encode a
+||<
+
+の各行、つまり Nothing に対する場合、Justに対する場合の函数の定義それぞれのことです。GHCi で Clause の情報を見てみると、
+
+>|zsh|
+> :info Clause
+data Clause = Clause [Pat] Body [Dec]
+  	-- Defined in Language.Haskell.TH.Syntax
+instance Eq Clause -- Defined in Language.Haskell.TH.Syntax
+instance Show Clause -- Defined in Language.Haskell.TH.Syntax
+instance Ppr Clause -- Defined in Language.Haskell.TH.Ppr
+||<
+
+となっています。データ構築子は Clause のみで、引数(のパタン)のリスト、定義の式本体と、いくつかの定義のリストを取るようになっていますね。
+最後の定義のリストはなんでしょうか？THの構文木は実際の構文に習って組み立てられていることから類推すると……？実は、これは where 節に取られる定義のリストです。
+
+Haskell を書いていると、時々「あれっ、where 節って関数定義全体にわたるんだっけ……？」と思うときがありますが、この構文木を見れば一目瞭然に各パターンに対してだけであることがわかりますね。このように、THをやっていると Haskell の構文木でアイマイにしか理解していなかったところを理解できると云う副作用があります。わいわい。
 
 ** Template Haskell の落とし穴
 *** Stage Restriction とのたたかい
 それは、<strong>トップレベル接合中で呼び出せる函数は外部から import したものだけ</strong>ということです。何故こんな制限があるのかと云うと、コンパイル時に接合に循環が起きないかをチェックするのが技術的に非常にコストがかかるため、このような形になっています。では、ローカルの変数などを渡したい場合はどうすればいいの……？と云うのが当然次に出て来る疑問ですが、その場合は変数の名前を渡してやるように変更すれば、大抵の場合うまくいきます。
+
+*** 接合部分のデバッグ
+接合時にエラーが起きていると、どんな式なんや……とチェックするのが色々と面倒です。そこでコンパイル時に -ddump-splices オプションを渡すと、接合が起きた場所と最終的にどんな式・宣言に展開されたかをチェックすることが出来ます。
