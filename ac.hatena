@@ -678,7 +678,7 @@ data Maybe a = Nothing | Just a
 + 一番左の Nothing だったら O だけでおわり
 + 二番目の Just a  だったら I に続けて a をエンコードしたものをくっ付ける
 
-と云う感じの定義になっていました。これをより一般の場合に敷衍してみましょう。たとえば次の型を上のマナーでエンコードするとどうなるか？
+と云う感じの定義になっていました。これをより一般の場合に敷衍してみましょう。たとえば次の型を上のマナーの類推でエンコードするとどうなるか？
 
 >|haskell|
 data WeightTree a = Nil | Leaf Int a | Branch (WeightTree a) (WeightTree a)
