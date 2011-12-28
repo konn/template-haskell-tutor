@@ -739,6 +739,7 @@ genFuns (p:ps) (e:es) =
       clause (map return pat) (normalB [| I : $(return e) |]) []
 ||<
 
+こうして関数定義節本体を得たら、あとは instanceD で包んで返してあげればよいだけです。
 
 >|haskell|
 appsT :: [TypeQ] -> TypeQ
