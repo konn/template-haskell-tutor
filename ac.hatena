@@ -1,4 +1,4 @@
-*1324220725*[Template Haskell][メタプログラミング] できる！Template Haskell (死亡)
+*1324220725*[Template Haskell][メタプログラミング] できる！Template Haskell (完)
 この記事は [http://partake.in/events/eaea52c2-61ef-46d5-a855-3a2dde459e3a:title=Haskell Advent Calendar 2011] 18日目の参加記事です。
 
 Template Haskell の初心者にむけて、その原理と方法論を、THを書くときの思考法にそって丁寧に解説するこころみです。なので幾分冗長なところがありますので、知ってると思ったら飛ばしてしまって大丈夫です。
