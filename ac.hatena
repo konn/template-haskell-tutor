@@ -813,7 +813,7 @@ data Tree a = Leaf [a] | Branch (Tree a) (Tree a)
 
 *** 接合作用素と ($) が紛らわしい
 前も書きましたが接合作用素 $() の括弧が省略出来るため、函数適用演算子 ($) と紛らわしく、プログラムが malformed になることがよくあります。
-TH を使うときは、中置演算子の $ の前後にはしっかり空白を置くか、一切使わないようにしましょう。
+TH を使うときは、中置演算子の $ の前後にはしっかり空白を置くか、一切使わないようにしましょう。接合作用素についても、省略出来る場合でも括弧はしっかり書くようにしましょう。
 
 *** Stage Restriction とのたたかい
 前に触れましたが、構文木を接合する際に Stage Restriction と云う制限がかかります。それは、<strong>トップレベル接合中で呼び出せる函数は外部から import したものだけ</strong>という制限です。
@@ -834,8 +834,7 @@ wtf = infixApp (litE (stringL "hello ")) [| (++) |] (conE 'True)
 GHCiに実行させてみましょうか。
 
 >|haskell|
-> $wtf
-> $wtf
+> $(wtf)
 <interactive>:1:1:
     Couldn't match expected type `[Char]' with actual type `Bool'
     In the second argument of `(++)', namely `True'
@@ -843,3 +842,5 @@ GHCiに実行させてみましょうか。
     In the result of the splice:
       $wtf
     To see what the splice expanded to, use -ddump-splices
+||<
+
