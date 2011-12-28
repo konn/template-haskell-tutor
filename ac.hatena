@@ -1,4 +1,4 @@
-*1324220725*[Template Haskell][メタプログラミング] できる！Template Haskell (必死)
+*1324220725*[Template Haskell][メタプログラミング] できる！Template Haskell (死亡)
 この記事は [http://partake.in/events/eaea52c2-61ef-46d5-a855-3a2dde459e3a:title=Haskell Advent Calendar 2011] 18日目の参加記事です。
 
 ですが、ちょっと間に合わなかったので、出来たところから順次公開していく、と云う形式にしたいと思います。本当に済みません……。
@@ -739,7 +739,18 @@ genFuns (p:ps) (e:es) =
       clause (map return pat) (normalB [| I : $(return e) |]) []
 ||<
 
-こうして関数定義節本体を得たら、あとは instanceD で包んで返してあげればよいだけです。
+こうして関数定義節本体を得たら、あとは instanceD で包んで返してあげればよいだけです。第二引数の
+
+>|haskell|
+appT (conT ''Bin) (appsT $ conT name : map (varT . tvName) vars)
+||<
+と云うのが少し読みづらいですが、これは型インスタンス宣言の部分で、例えば WeightTree に対しては
+
+>|haskell|
+Bin (WeightTree a)
+||<
+
+の部分にすぎません。呼ばれている appsT と云うのは、このモジュールで勝手に定義した次の便利函数です：
 
 >|haskell|
 appsT :: [TypeQ] -> TypeQ
@@ -747,6 +758,14 @@ appsT [] = error "appsT []"
 appsT [x] = x
 appsT (x:y:zs) = appsT ( (appT x y) : zs )
 ||<
+
+つまり、型のリストを取って、それを順に適用してった型を返す函数です。正しくないコードですがこんな感じ。
+
+>|haskell|
+appsT [Either, Int, String] == Either Int String
+||<
+
+式の構文木に関しては、Language.Haskell.TH で [http://hackage.haskell.org/packages/archive/template-haskell/latest/doc/html/Language-Haskell-TH.html#v:appsE:title=appsE] と云う同様のことをやってくれる便利函数が居るんですが、型に対しては用意されてなかったのでその定義をちょここっとかえて自前で定義してみました。
 
 ** Template Haskell の落とし穴
 *** Stage Restriction とのたたかい
