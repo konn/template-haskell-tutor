@@ -453,6 +453,14 @@ sel' count nth | count >= nth = do
 
 説明はもう殆んど要らないと思います。沢山変数を生成するかわりに目当ての引数と残りをワイルドカードにしたのと、あとは明示的にタプルに対するパタンマッチで書き直したのだけです。
 
+
+さて、以上の知識を得た上で、次の課題をやってみたいひとはやってみてください。
+
++ 任意長タプル要素の入れ替え函数を定義する (難易度：易)
++ 一般化 flip の定義。(難易度：易)
++ 一般化 curry/uncurry の定義。(難易度：易)
+++ つまり、 >|haskell| $(curry 5) :: ((a,b,c,d,e) -> f) -> a -> b -> c -> d -> e -> f ||< みたいな函数の定義
+
 ** インスタンスの自動生成 —— 型情報と定義の扱い
 さて。大体コツはつかめてきたでしょうか。タプルの例はちょっと簡単すぎた感があるので、いっきに進んだ例を扱ってみましょう。
 ソースコード全てを載せると大変なので、GitHub に載せた[https://github.com/konn/template-haskell-tutor:title=ソースコード]を参照してください。
@@ -794,7 +802,11 @@ data Tree a = Leaf [a] | Branch (Tree a) (Tree a)
 ||<
 のような型に対してのインスタンス制約の文脈が正しく指定出来ません。克服するにはどうすればいいでしょう？(難易度：至難 ((出題者が答えを(ry )) )
 ++ 方針1：面倒なので型引数を全部要求しちゃう
-++ 方針2：reify でとれる ClassInstance の情報を利用して文脈を正確に
+++ 方針2：reify でとれる [http://hackage.haskell.org/packages/archive/template-haskell/2.5.0.0/doc/html/Language-Haskell-TH-Syntax.html#t:ClassInstance:title=ClassInstance] の情報を利用して文脈を正確に指定するようがんばる
++ 必要なインスタンスが定義されていなかった場合自動的にそれも定義する機能を付ける。(難易度：難)
+++ 方針：reify の ClassInstance の情報や [http://hackage.haskell.org/packages/archive/template-haskell/2.5.0.0/doc/html/Language-Haskell-TH-Syntax.html#v:isClassInstance:title=isClassInstance]、[http://hackage.haskell.org/packages/archive/template-haskell/2.5.0.0/doc/html/Language-Haskell-TH-Syntax.html#v:classInstances=classInstances]函数などを使ってみる
++++ ただし、2.5.0.0 の classInstances 函数はとても使い辛い
+
 
 ** Template Haskell の落とし穴
 *** Stage Restriction とのたたかい
