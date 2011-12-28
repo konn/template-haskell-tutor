@@ -665,7 +665,7 @@ instance Ppr Clause -- Defined in Language.Haskell.TH.Ppr
 
 Haskell を書いていると、時々「あれっ、where 節って関数定義全体にわたるんだっけ……？」と思うときがありますが、この構文木を見れば一目瞭然に各パターンに対してだけであることがわかりますね。このように、THをやっていると Haskell の構文木でアイマイにしか理解していなかったところを理解できると云う副作用があります。わいわい。
 
-さて、必要な道具は大体そろった気がします。あとは今迄の要領で知らない構文木を調べていけばいいわけです。
+さて、必要な道具は大体そろった気がします。あとは今迄の要領で知らない構文木を調べていけばいいわけです。こんなことを繰り返して、encode の自動生成まで書いたのがリポジトリの[https://github.com/konn/template-haskell-tutor/blob/master/BinTH.hs:title=BinTH.hs]です。
 
 ** Template Haskell の落とし穴
 *** Stage Restriction とのたたかい
