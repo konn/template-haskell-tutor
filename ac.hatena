@@ -710,23 +710,6 @@ deriveBin は Bin のインスタンスにしたい型の名前を取ってそ�
 次の行では、下で定義されている implForCon 函数にデータ構築子の情報を渡して、各構築子に対するエンコード函数の定義に必要な型制約、引数のパターン、定義本体(のもとになるもの)を取得しています。
 
 >|haskell|
-genFuns :: [PatQ] -> [ExpQ] -> [ClauseQ]
-genFuns []     []     = [ ]
-genFuns [p]    [e]    = [ clause [p] (normalB e) []]
-genFuns (p:ps) (e:es) =
-  clause [p] (normalB $ [| O : $(e) |]) [] : map modifyBody (genFuns ps es)
-  where
-    modifyBody :: ClauseQ -> ClauseQ
-    modifyBody cq = do
-      Clause pat (NormalB e) [] <- cq
-      clause (map return pat) (normalB [| I : $(return e) |]) []
-
-appsT :: [TypeQ] -> TypeQ
-appsT [] = error "appsT []"
-appsT [x] = x
-appsT (x:y:zs) = appsT ( (appT x y) : zs )
-      
-
 implForCon :: Con -> Q ([Type], PatQ, ExpQ)
 implForCon con = do
   let (name, typs) = conTypesAndName con
@@ -736,6 +719,14 @@ implForCon con = do
       expr = [| concat $(listE $ map (appE [| encode |]) exps) |]
   return (filter isVarType typs, conP name pats, expr)
 
+||<
+
+>|haskell|
+
+appsT :: [TypeQ] -> TypeQ
+appsT [] = error "appsT []"
+appsT [x] = x
+appsT (x:y:zs) = appsT ( (appT x y) : zs )
 ||<
 
 ** Template Haskell の落とし穴
