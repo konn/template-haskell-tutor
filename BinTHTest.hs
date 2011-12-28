@@ -8,5 +8,7 @@ data Unit a = Unit a
 
 data Phantom a = Phantom Int
 
+data Hoge a = Huga [a] | NilHoge
+
 deriveBin ''Tree
 deriveBin ''Unit
