@@ -707,7 +707,7 @@ deriveBin dName = do
 
 deriveBin は Bin のインスタンスにしたい型の名前を取ってその定義を返す函数です。reify で型情報を取得して、自前で定義した normalizeInfo でデータ型の定義に変換しています。変換と云うと大袈裟に聴こえますが、基本的に data 定義と newtype 定義以外を弾いて、面倒なので結果は data 定義のものに統一するように処理をしているだけです(詳しくはソース参照)。
 
-次の行では、下で定義されている implForCon 函数にデータ構築子の情報を渡して、各構築子に対するエンコード函数の定義に必要な型制約、引数のパターン、定義本体(のもとになるもの)を取得しています。
+次の行では、下で定義されている implForCon 函数にデータ構築子の情報を渡して、各構築子に対するエンコード函数の定義に必要な型制約、引数のパターン、定義本体(のもとになるもの)を取得しています。必要な型制約、と云うのは Maybe a の a や WeightTree a の a などの型変数のように、Bin クラスのインスタンスになっていなくては困るものを抜き出してきていると思ってください。
 
 >|haskell|
 implForCon :: Con -> Q ([Type], PatQ, ExpQ)
@@ -720,6 +720,8 @@ implForCon con = do
   return (filter isVarType typs, conP name pats, expr)
 
 ||<
+
+自前で定義した conTypeAndName で構築子の名前とその引数型のリストを取り出し、引数の数だけパタンマッチに必要な変数名を newName で用意しています。式のところでは、
 
 >|haskell|
 genFuns :: [PatQ] -> [ExpQ] -> [ClauseQ]
