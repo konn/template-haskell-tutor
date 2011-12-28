@@ -1,7 +1,8 @@
 *1324220725*[Template Haskell][メタプログラミング] できる！Template Haskell (死亡)
 この記事は [http://partake.in/events/eaea52c2-61ef-46d5-a855-3a2dde459e3a:title=Haskell Advent Calendar 2011] 18日目の参加記事です。
 
-ですが、ちょっと間に合わなかったので、出来たところから順次公開していく、と云う形式にしたいと思います。本当に済みません……。
+Template Haskell の初心者にむけて、その原理と方法論を、THを書くときの思考法にそって丁寧に解説するこころみです。なので幾分冗長なところがありますので、知ってると思ったら飛ばしてしまって大丈夫です。
+節の最後に簡単な要約があるので、そこだけ読む、と云う読み方も出来ると思います。
 
 ** Template Haskell とは？── TH で出来ること
 Template Haskell とは、Haskell で((正確には Haskell 処理系の一種である GHC で))コンパイル時メタプログラミングを行うための仕組みです。
@@ -904,4 +905,34 @@ Main* Prelude> $(wtf)
 これは余り不便だと云うので、新しく型をパラメタ化した [http://hackage.haskell.org/trac/ghc/blog/Template%20Haskell%20Proposal:title=TExp 型を作ったらどうかと云う Proposal]もあります。
 
 大分前の例でも出て来ましたが、引数パターンの名前が被っていたりと云ったのも接合してみるまでエラーがわかないので注意が必要です。
+どうしてもどこで食い違いがおこっているのかわからない……。と云うような場合は、マクロを使用しているプログラムをコンパイルする際に -ddump-splices オプションを付けてコンパイルすると、構文木の接合が起きるたびにどんな風にそれが展開されたかを表示してくれるので、試してみると良いでしょう。
 
+例えば最後の BinTH の例である BinTHTest.hs を -ddump-splices を付けてコンパイルすると、
+
+>|haskell|
+BinTHTest.hs:1:1: Splicing declarations
+    deriveBin 'Tree
+  ======>
+    BinTHTest.hs:13:1-16
+    instance Bin a[a3GR] => Bin (Tree a[a3GR]) where
+        { encode Nil = (O GHC.Types.: concat [])
+          encode (Leaf x[a3Hr])
+            = (I GHC.Types.: (O GHC.Types.: concat [encode x[a3Hr]]))
+          encode (Branch x[a3Hs] x[a3Ht])
+            = (I
+             GHC.Types.:
+               (I GHC.Types.: concat [encode x[a3Hs], encode x[a3Ht]])) }
+BinTHTest.hs:1:1: Splicing declarations
+    deriveBin 'Unit
+  ======>
+    BinTHTest.hs:14:1-16
+    instance Bin a[a3GQ] => Bin (Unit a[a3GQ]) where
+        { encode (Unit x[a3HW]) = concat [encode x[a3HW]] }
+||<
+
+こんな感じでマクロ展開後のコードを表示してくれるようになります。便利でしょ？
+
+** 結語
+長々と & 期限を大幅に破って続けて参りましたこの記事ですが、何とかこの辺で終わりにしたいと思います。……最初のテーブルにはもっと内容があった気がするんですが、きっとそれは気のせいです。こんな記事を何度も読むより、自分で何度も書き直したりしたほうが TH は身に付くと思うので、是非みなさん楽しんでください。
+
+Happy Template Haskelling and have a nice year!
