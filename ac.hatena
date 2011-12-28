@@ -523,7 +523,7 @@ do info <- reify ''String
 
 >|haskell|
 > :l reifier.hs
-[1 of 1] Compiling Main             ( /Users/hiromi/haskell/advent/2011/reifier.hs, interpreted )
+[1 of 1] Compiling Main             ( reifier.hs, interpreted )
 TyConI (TySynD GHC.Base.String [] (AppT ListT (ConT GHC.Types.Char)))
 Ok, modules loaded: Main.
 ||<
@@ -560,7 +560,7 @@ do info <- reify ''Bin
 >|haskell|
 > :l reifier.hs
 [1 of 2] Compiling Bin              ( Bin.hs, interpreted )
-[2 of 2] Compiling Main             ( /Users/hiromi/haskell/advent/2011/reifier.hs, interpreted )
+[2 of 2] Compiling Main             ( reifier.hs, interpreted )
 ClassI (ClassD [] Bin.Bin [PlainTV a_1627406217] [] [SigD Bin.encode (ForallT [PlainTV a_1627406217] [ClassP Bin.Bin [VarT a_1627406217]] (AppT (AppT ArrowT (VarT a_1627406217)) (AppT ListT (ConT Bin.Bit)))),SigD Bin.decode (ForallT [PlainTV a_1627406217] [ClassP Bin.Bin [VarT a_1627406217]] (AppT (AppT ArrowT (AppT ListT (ConT Bin.Bit))) (AppT (AppT (TupleT 2) (VarT a_1627406217)) (AppT ListT (ConT Bin.Bit)))))]) [ClassInstance {ci_dfun = Bin.$fBinInt, ci_tvs = [], ci_cxt = [], ci_cls = Bin.Bin, ci_tys = [ConT GHC.Types.Int]},ClassInstance {ci_dfun = Bin.$fBinBool, ci_tvs = [], ci_cxt = [], ci_cls = Bin.Bin, ci_tys = [ConT GHC.Bool.Bool]},ClassInstance {ci_dfun = Bin.$fBin[], ci_tvs = [PlainTV a_1627406230], ci_cxt = [ClassP Bin.Bin [VarT a_1627406230]], ci_cls = Bin.Bin, ci_tys = [AppT ListT (VarT a_1627406230)]},ClassInstance {ci_dfun = Bin.$fBinBit, ci_tvs = [], ci_cxt = [], ci_cls = Bin.Bin, ci_tys = [ConT Bin.Bit]}]
 Ok, modules loaded: Bin, Main.
 ||<
@@ -584,7 +584,7 @@ do info <- reify 'curry
 >|haskell|
 > :reload
 [1 of 2] Compiling Bin              ( Bin.hs, interpreted )
-[2 of 2] Compiling Main             ( /Users/hiromi/haskell/advent/2011/reifier.hs, interpreted )
+[2 of 2] Compiling Main             ( reifier.hs, interpreted )
 VarI Data.Tuple.curry (ForallT [PlainTV a_1627409906,PlainTV b_1627409907,PlainTV c_1627409908] [] (AppT (AppT ArrowT (AppT (AppT ArrowT (AppT (AppT (TupleT 2) (VarT a_1627409906)) (VarT b_1627409907))) (VarT c_1627409908))) (AppT (AppT ArrowT (VarT a_1627409906)) (AppT (AppT ArrowT (VarT b_1627409907)) (VarT c_1627409908))))) Nothing (Fixity 9 InfixL)
 Ok, modules loaded: Bin, Main.
 ||<
@@ -867,7 +867,6 @@ multi = [| \a -> (a *) |]
 一般に、合成したばかりの構文木を評価するようなマクロは TH だけでは書けません。まず TH 自身を TH で扱うことが出来ないので、メタマクロのようなものもかくことが出来ません。どうしてもやりたい……？その場合は [http://hackage.haskell.org/package/hint:title=hint] パッケージなり [http://hackage.haskell.org/package/haskell-src-exts:title=haskell-src-exts] パッケージなりを調べてみると幸せになれるかもしれませんね。お勧めはしませんが。。。
 
 
-
 *** マクロがコンパイル出来たからって全てが上手くいくと思うな
 THの函数と体力を駆使して次の様なマクロを書いたとします。
 
@@ -879,7 +878,10 @@ wtf = infixApp (litE (stringL "hello ")) [| (++) |] (conE 'True)
 GHCiに実行させてみましょうか。
 
 >|haskell|
-> $(wtf)
+Prelude > :l MyGreatMacro.hs
+[1 of 1] Compiling Main             ( MyGreatMacro.hs, interpreted )
+Ok, modules loaded: Main.
+Main* Prelude> $(wtf)
 <interactive>:1:1:
     Couldn't match expected type `[Char]' with actual type `Bool'
     In the second argument of `(++)', namely `True'
@@ -888,4 +890,18 @@ GHCiに実行させてみましょうか。
       $wtf
     To see what the splice expanded to, use -ddump-splices
 ||<
+
+失敗してしまいました……!？ナンデ!？マクロナンデ!？
+
+と思いますが、そりゃ失敗する筈ですよ。だって、wtf を良くみたら、
+
+>|haskell|
+"hello" ++ True
+||<
+
+って云う構文木なんですから、そりゃ型が合わないんだから死にます。Exp 型の型付けが弱いのでこういうことが起きるわけです。
+そういう仕組みなので、マクロで型がちゃんと合うかどうかを自分で見てやる必要があります。
+これは余り不便だと云うので、新しく型をパラメタ化した [http://hackage.haskell.org/trac/ghc/blog/Template%20Haskell%20Proposal:title=TExp 型を作ったらどうかと云う Proposal]もあります。
+
+大分前の例でも出て来ましたが、引数パターンの名前が被っていたりと云ったのも接合してみるまでエラーがわかないので注意が必要です。
 
